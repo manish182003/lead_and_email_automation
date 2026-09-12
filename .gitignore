@@ -1,0 +1,26 @@
+# Environment & Secret variables (CRITICAL: Do NOT commit!)
+.env
+.env.local
+
+# Virtual Environment
+venv/
+.venv/
+env/
+ENV/
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# Databases & local logs
+data/leads.db
+data/*.db
+logs/
+*.log
+
+# IDE files
+.vscode/
+.idea/
+*.swp

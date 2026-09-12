@@ -1,0 +1,29 @@
+services:
+  - type: web
+    name: email-automation-pipeline
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python orchestrator.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SENDER_NAME
+        value: Jefferson Geerman
+      - key: SENDER_EMAIL
+        value: hello@outreach.bloobeach.com
+      - key: PORTFOLIO_WEBSITE
+        value: https://bloobeach.com
+      - key: SMTP_HOST
+        value: smtp.hostinger.com
+      - key: SMTP_PORT
+        value: "465"
+      - key: SMTP_USER
+        value: hello@outreach.bloobeach.com
+      - key: SMTP_PASS
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: SERPAPI_KEY
+        sync: false
+      - key: GOOGLE_PLACES_API_KEY
+        sync: false
