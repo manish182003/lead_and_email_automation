@@ -144,7 +144,7 @@ class ScraperAgent:
             url = f"https://html.duckduckgo.com/html/?q={quote(query)}"
             logger.info(f"Running stealth web search for: '{query}'...")
             time.sleep(random.uniform(2.0, 4.0))  # Anti-bot delay jitter
-            res = self.session.get(url, headers=self.get_headers(), timeout=10)
+            res = self.session.get(url, headers=self.get_headers(), timeout=5)
             if res.status_code == 200:
                 soup = BeautifulSoup(res.text, "lxml")
                 results = soup.find_all("div", class_="result")
