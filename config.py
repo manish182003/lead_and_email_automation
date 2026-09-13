@@ -32,16 +32,16 @@ Jefferson Geerman (bloobeach.com & manishjoshi.online) - AI/ML Engineering & Cus
 - Core Offerings: Workflow automation, workorder & dispatch systems, custom AI/RAG search, and Flutter mobile apps for field workers & SMB teams.
 """
 
-# Configurable Search Queries tailored for Small & Medium Size Businesses (SMBs)
+# Configurable Search Queries tailored for Global Small & Medium Size Businesses (US, UK, Canada, Australia)
 SEARCH_QUERIES = [
-    "field service contractors workorder dispatch",
-    "HVAC plumbing companies mobile app",
-    "logistics freight brokers process automation",
-    "regional healthcare clinics patient intake software",
-    "boutique e-commerce brands mobile app",
-    "construction contractors field worker app",
-    "local service business dispatch automation",
-    "b2b software startups needing mobile app"
+    "field service contractors workorder dispatch USA",
+    "HVAC plumbing contractors mobile app Texas California Florida",
+    "logistics freight brokers process automation US Canada",
+    "regional healthcare clinics patient intake software USA UK",
+    "boutique e-commerce brands mobile app US Australia",
+    "construction contractors field worker app USA Canada",
+    "local service business dispatch automation UK US",
+    "b2b software companies workflow automation USA"
 ]
 
 # List of mega enterprise brands to strictly exclude from outreach
@@ -56,9 +56,10 @@ DAILY_SEND_CAP = 20
 MIN_SEND_DELAY_SEC = 60
 MAX_SEND_DELAY_SEC = 180
 
-# Business Hours (24-hour format)
-BUSINESS_HOURS_START = 9   # 9:00 AM
-BUSINESS_HOURS_END = 18    # 6:00 PM
+# Business Sending Hours for US/UK/International Client Alignment (24-hour format IST)
+# 18:00 IST to 23:30 IST aligns with 8:30 AM EST to 2:00 PM EST (Peak US Business Hours)
+BUSINESS_HOURS_START = 18  # 6:00 PM IST (8:30 AM US Eastern Time)
+BUSINESS_HOURS_END = 24    # 12:00 AM IST (2:30 PM US Eastern Time)
 BUSINESS_TIMEZONE = "Asia/Kolkata"
 
 # Follow-Up Intervals (Days)

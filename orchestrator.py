@@ -144,19 +144,19 @@ def start_scheduler():
     # 3. Email Drafting Agent: Every 3 hours (offset by 15 mins)
     scheduler.add_job(job_drafting, IntervalTrigger(hours=3, start_date=time.strftime("%Y-%m-%d %H:15:00")), id="drafting_interval", replace_existing=True)
 
-    # 4. Sender Agent: Daily at 9:30 AM IST (within business hours)
-    scheduler.add_job(job_sender, CronTrigger(hour=9, minute=30), id="sender_daily", replace_existing=True)
+    # 4. Sender Agent: Daily at 6:30 PM IST / 18:30 IST (Peak US/UK Business Hours: 9:00 AM EST)
+    scheduler.add_job(job_sender, CronTrigger(hour=18, minute=30), id="sender_daily", replace_existing=True)
 
-    # 5. Follow-Up Agent: Daily at 10:30 AM IST
-    scheduler.add_job(job_followup, CronTrigger(hour=10, minute=30), id="followup_daily", replace_existing=True)
+    # 5. Follow-Up Agent: Daily at 7:30 PM IST / 19:30 IST
+    scheduler.add_job(job_followup, CronTrigger(hour=19, minute=30), id="followup_daily", replace_existing=True)
 
     logger.info("APScheduler 24/7 Multi-Agent Orchestrator Started successfully.")
     logger.info("Scheduled Jobs:")
     logger.info("  - Lead Scraper    : Daily at 02:00 AM IST")
     logger.info("  - Enrichment Agent: Every 3 Hours")
     logger.info("  - Drafting Agent  : Every 3 Hours (+15 mins)")
-    logger.info("  - Sender Agent    : Daily at 09:30 AM IST (Business Hours)")
-    logger.info("  - Follow-Up Agent : Daily at 10:30 AM IST")
+    logger.info("  - Sender Agent    : Daily at 06:30 PM IST (US 9:00 AM EST)")
+    logger.info("  - Follow-Up Agent : Daily at 07:30 PM IST (US 10:00 AM EST)")
     
     try:
         scheduler.start()
