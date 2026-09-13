@@ -52,8 +52,10 @@ class FollowUpAgent:
                     body = (
                         f"Hi team at {business_name},\n\n"
                         f"Just floating this back up — happy to skip the call and just answer any questions over email if easier.\n\n"
-                        f"Are you currently open to exploring AI automation or mobile app solutions for your team?\n\n"
-                        f"Best,\nJefferson Geerman\nbloobeach.com | manishjoshi.online"
+                        f"Are you currently open to exploring AI workflow automation or mobile app solutions for your team?\n\n"
+                        f"Jefferson Geerman\n"
+                        f"Bloo Beach Softwares LLC | 1309 Coffeen Avenue STE 1200, Sheridan, WY 82801, USA\n"
+                        f"Website: https://bloobeach.com | Portfolio: https://manishjoshi.online"
                     )
 
                     logger.info(f"Sending Follow-Up 1 to {recipient} ({business_name})...")
@@ -84,7 +86,9 @@ class FollowUpAgent:
                         f"Hi team at {business_name},\n\n"
                         f"One final check on this — let me know if custom AI automation or mobile app development is on your roadmap this quarter.\n\n"
                         f"Either way, wish you all the best with your projects!\n\n"
-                        f"Best,\nJefferson Geerman\nbloobeach.com | manishjoshi.online"
+                        f"Jefferson Geerman\n"
+                        f"Bloo Beach Softwares LLC | 1309 Coffeen Avenue STE 1200, Sheridan, WY 82801, USA\n"
+                        f"Website: https://bloobeach.com | Portfolio: https://manishjoshi.online"
                     )
 
                     logger.info(f"Sending Final Follow-Up 2 to {recipient} ({business_name})...")

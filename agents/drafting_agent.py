@@ -8,7 +8,8 @@ from groq import Groq
 
 from config import (
     GROQ_API_KEY, GROQ_MODEL, GROQ_FALLBACK_MODEL,
-    SERVICES_SUMMARY, PORTFOLIO_URL, OPTIONAL_CALENDLY_LINK
+    SERVICES_SUMMARY, PORTFOLIO_URL, SECONDARY_PORTFOLIO,
+    COMPANY_NAME, COMPANY_ADDRESS, OFFICIAL_SIGNATURE
 )
 from database import Database
 
@@ -25,15 +26,15 @@ class DraftingAgent:
                 logger.error(f"Failed to initialize Groq client: {e}")
 
     def generate_email_llm(self, business_name: str, summary: str, pain_point: str, model: str = GROQ_MODEL) -> Tuple[str, str]:
-        """Calls Groq LLM API to generate a short, curiosity-driven cold email focused on booking a meeting."""
+        """Calls Groq LLM API to generate a short, curiosity-driven cold email focused on booking a discovery chat."""
         if not self.client:
             raise ValueError("Groq API Key missing or client uninitialized.")
 
         prompt = f"""
-You are Jefferson Geerman from Bloobeach (bloobeach.com & manishjoshi.online).
+You are Jefferson Geerman from Bloo Beach Softwares LLC (bloobeach.com & manishjoshi.online).
 Write a short, casual, curiosity-driven cold email to a small/medium business owner.
 
-GOAL: Book a quick 10-minute discovery chat to discuss their workflow. DO NOT try to sell services or pitch products in this first email!
+GOAL: Ask a quick question about their workflow (workorders, paper/excel vs software, dispatch, client intake) to start a 10-minute discovery chat. DO NOT try to sell services or pitch products in this first email!
 
 TARGET BUSINESS DETAILS:
 - Company Name: {business_name}
@@ -41,21 +42,21 @@ TARGET BUSINESS DETAILS:
 - Context / Service Type: {pain_point}
 
 EMAIL STRUCTURE INSTRUCTIONS:
-1. GREETING: "Hey there," or "Hi {business_name} team,"
-2. FIRST SENTENCE: Ask a genuine, curious question about how a company like theirs handles their core workorders, dispatch, or client intake workflows.
-   Example style: "I was wondering how a company like yours handles workorders when dispatching your team — paper, excel spreadsheets, or software?"
-3. CALL TO ACTION: A soft, low-pressure request for a brief chat:
-   "If you have time for a quick 10-minute chat this week, I'd love to discuss this further."
-4. SIGNATURE:
-Best,
+1. GREETING: "Hey there," or "Hi {business_name} team," or "Hi [Name] — quick one:"
+2. FIRST SENTENCE: Ask a casual, curious question about how a company like theirs handles their paperwork, dispatch, or client intake workflows.
+   Example style: "When a team member at {business_name} finishes a job, how does the paperwork get back to the office? Still spreadsheets or paper?"
+3. CALL TO ACTION: A soft, low-pressure request:
+   "We built workflow automation tools so teams can dispatch, log jobs, and get signed work orders out to clients in a few taps. Open to a quick 10-minute look?"
+4. SIGNATURE (MUST MATCH THIS EXACT FORMAT AT THE BOTTOM):
 Jefferson Geerman
-bloobeach.com | manishjoshi.online
+Bloo Beach Softwares LLC | 1309 Coffeen Avenue STE 1200, Sheridan, WY 82801, USA
+Website: https://bloobeach.com | Portfolio: https://manishjoshi.online
 
 RULES:
-- NO SALES PITCH! NO "I am an AI engineer"! NO "I build custom apps"! NO hard selling!
-- Keep total email body under 60 words.
+- NO HARD SALES PITCH! NO "I am an AI engineer"! NO "buy our software"!
+- Keep total email body under 75 words.
 - Natural, casual, direct human tone.
-- Subject Line: Short (3-5 words), lowercase, curiosity-driven (e.g. "quick question about workorders", "dispatch workflow question", "quick question for {business_name}").
+- Subject Line: Short (3-5 words), lowercase, curiosity-driven (e.g. "quick question about workflow", "dispatch workflow question", "quick question for {business_name}").
 
 OUTPUT FORMAT (JSON ONLY):
 Return ONLY a JSON object with keys "subject" and "body".
@@ -68,7 +69,7 @@ Return ONLY a JSON object with keys "subject" and "body".
             ],
             model=model,
             temperature=0.7,
-            max_tokens=250,
+            max_tokens=280,
             response_format={"type": "json_object"}
         )
 
@@ -77,13 +78,13 @@ Return ONLY a JSON object with keys "subject" and "body".
         return data.get("subject", "").strip(), data.get("body", "").strip()
 
     def validate_quality_heuristic(self, subject: str, body: str, business_name: str) -> Tuple[bool, str]:
-        """Validates draft quality, length, and signature."""
+        """Validates draft quality, length, and official company signature."""
         if not subject or not body:
             return False, "Empty subject or body"
 
         words = body.split()
-        if len(words) > 90:
-            return False, f"Body too long ({len(words)} words > 90)"
+        if len(words) > 100:
+            return False, f"Body too long ({len(words)} words > 100)"
 
         if len(words) < 20:
             return False, f"Body too short ({len(words)} words < 20)"
@@ -91,9 +92,9 @@ Return ONLY a JSON object with keys "subject" and "body".
         if subject.isupper():
             return False, "Subject is ALL CAPS"
 
-        # Ensure signature is present
-        if "Jefferson Geerman" not in body or "bloobeach.com" not in body:
-            return False, "Missing signature or bloobeach.com URL"
+        # Ensure signature and official address are present
+        if "Jefferson Geerman" not in body or "Bloo Beach Softwares LLC" not in body:
+            return False, "Missing Jefferson Geerman or Bloo Beach Softwares LLC signature"
 
         # Reject hard sales pitches or generic boilerplate
         prohibited_phrases = [
@@ -127,13 +128,15 @@ Return ONLY a JSON object with keys "subject" and "body".
                 logger.error(f"Groq API error on attempt {attempt} for {business_name}: {e}")
                 time.sleep(1.0)
 
-        # Fallback template matching exact user example
+        # Fallback template matching exact company signature and structure
         fallback_subject = f"quick question for {business_name}"
         fallback_body = (
             f"Hey there,\n\n"
-            f"I was just wondering how a company like {business_name} handles workorders and team coordination — paper, excel sheets, or something else?\n\n"
-            f"If you have time for a 10-minute chat this week, I'd love to discuss this further.\n\n"
-            f"Best,\nJefferson Geerman\nbloobeach.com | manishjoshi.online"
+            f"Quick one: when a team member at {business_name} finishes a job, how does the paperwork get back to the office — still spreadsheets or paper?\n\n"
+            f"We built workflow automation tools so teams can dispatch, log jobs, and get signed work orders out to clients in a few taps. Open to a quick 10-minute look?\n\n"
+            f"Jefferson Geerman\n"
+            f"Bloo Beach Softwares LLC | 1309 Coffeen Avenue STE 1200, Sheridan, WY 82801, USA\n"
+            f"Website: https://bloobeach.com | Portfolio: https://manishjoshi.online"
         )
         return True, fallback_subject, fallback_body, "Fallback template used"
 

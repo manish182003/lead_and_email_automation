@@ -21,15 +21,23 @@ LOG_FILE = LOGS_DIR / "pipeline.log"
 IMPORT_CSV_PATH = DB_DIR / "import_leads.csv"
 
 # Service & Portfolio Credentials
+COMPANY_NAME = "Bloo Beach Softwares LLC"
+COMPANY_ADDRESS = "1309 Coffeen Avenue STE 1200, Sheridan, WY 82801, USA"
 PORTFOLIO_URL = os.getenv("PORTFOLIO_WEBSITE", "https://bloobeach.com")
 SECONDARY_PORTFOLIO = "https://manishjoshi.online"
 SENDER_NAME = os.getenv("SENDER_NAME", "Jefferson Geerman")
 SENDER_EMAIL = os.getenv("SENDER_EMAIL", "hello@outreach.bloobeach.com")
 
+OFFICIAL_SIGNATURE = (
+    f"Jefferson Geerman\n"
+    f"Bloo Beach Softwares LLC | 1309 Coffeen Avenue STE 1200, Sheridan, WY 82801, USA\n"
+    f"Website: https://bloobeach.com | Portfolio: https://manishjoshi.online"
+)
+
 # Target Services Description for Groq Personalization
 SERVICES_SUMMARY = """
-Jefferson Geerman (bloobeach.com & manishjoshi.online) - AI/ML Engineering & Custom Mobile App Development agency for Small & Medium Businesses.
-- Core Offerings: Workflow automation, workorder & dispatch systems, custom AI/RAG search, and Flutter mobile apps for field workers & SMB teams.
+Jefferson Geerman from Bloo Beach Softwares LLC (1309 Coffeen Avenue STE 1200, Sheridan, WY 82801, USA | bloobeach.com & manishjoshi.online).
+- Core Offerings: Workorder & dispatch systems, mobile workflow apps for field techs, custom AI process automation, and Flutter apps.
 """
 
 # Configurable Search Queries tailored for Global Small & Medium Size Businesses (US, UK, Canada, Australia)
