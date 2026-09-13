@@ -161,7 +161,7 @@ Return ONLY a JSON object with keys "subject" and "body".
                 self.db.update_status(lead_id, "draft_failed", status_msg)
                 failed_count += 1
 
-            time.sleep(0.5)  # Rate pacing
+            time.sleep(1.5)  # Rate pacing to stay well under Groq Free Tier TPM limit
 
         processed = len(enriched_leads)
         logger.info(f"Drafting Finished: Processed={processed}, Drafted={drafted_count}, Failed={failed_count}")
