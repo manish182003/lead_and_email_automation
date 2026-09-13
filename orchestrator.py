@@ -128,10 +128,30 @@ def start_health_server():
     except Exception as e:
         logger.warning(f"Could not start Health Check HTTP server on port {port}: {e}")
 
+def run_startup_bootstrap():
+    """If DB has 0 leads on container boot/restart, automatically run Scraper -> Enrichment -> Drafting."""
+    try:
+        db = Database()
+        total = db.get_total_leads_count()
+        if total == 0:
+            logger.info("Database is empty on container startup. Triggering automatic bootstrap pass (Scraper -> Enrichment -> Drafting)...")
+            job_scraper()
+            job_enrichment()
+            job_drafting()
+            logger.info("Startup bootstrap pass completed! Database populated with fresh drafted emails.")
+        else:
+            logger.info(f"Database already populated with {total} leads. Skipping startup bootstrap.")
+    except Exception as e:
+        logger.error(f"Startup bootstrap exception: {e}", exc_info=True)
+
 def start_scheduler():
-    # Start Render Health Check server thread
+    # 1. Start Render Health Check server thread
     health_thread = threading.Thread(target=start_health_server, daemon=True)
     health_thread.start()
+
+    # 2. Trigger automatic bootstrap pass if DB is empty on startup
+    bootstrap_thread = threading.Thread(target=run_startup_bootstrap, daemon=True)
+    bootstrap_thread.start()
 
     scheduler = BlockingScheduler(timezone="Asia/Kolkata")
 
