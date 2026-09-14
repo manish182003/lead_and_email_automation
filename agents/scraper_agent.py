@@ -143,8 +143,8 @@ class ScraperAgent:
         try:
             url = f"https://html.duckduckgo.com/html/?q={quote(query)}"
             logger.info(f"Running stealth web search for: '{query}'...")
-            time.sleep(random.uniform(2.0, 4.0))  # Anti-bot delay jitter
-            res = self.session.get(url, headers=self.get_headers(), timeout=5)
+            time.sleep(random.uniform(1.0, 2.5))  # Anti-bot delay jitter
+            res = self.session.get(url, headers=self.get_headers(), timeout=8)
             if res.status_code == 200:
                 soup = BeautifulSoup(res.text, "lxml")
                 results = soup.find_all("div", class_="result")
@@ -176,8 +176,10 @@ class ScraperAgent:
                             "source": "stealth_web_scraper"
                         })
             logger.info(f"Stealth search returned {len(leads)} raw web leads.")
+        except requests.exceptions.Timeout:
+            logger.warning(f"Stealth search connection timed out for query '{query}' (DuckDuckGo rate-limited cloud IP). Skipping stealth fallback.")
         except Exception as e:
-            logger.error(f"Error in stealth search: {e}")
+            logger.warning(f"Stealth search notice: {e}")
         return leads
 
     def import_from_csv(self, csv_path: Path = IMPORT_CSV_PATH) -> List[Dict[str, Any]]:
