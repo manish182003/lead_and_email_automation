@@ -137,6 +137,7 @@ class SenderAgent:
                         json={
                             "from": f"{SENDER_NAME} <{resend_from}>",
                             "to": [recipient_email],
+                            "reply_to": SENDER_EMAIL,
                             "subject": subject,
                             "text": full_body
                         },
