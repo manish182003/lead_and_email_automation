@@ -97,12 +97,14 @@ class SenderAgent:
         # Option 1: Send via Resend HTTPS API (Port 443 - immune to cloud platform SMTP port blocks)
         if RESEND_API_KEY:
             try:
-                logger.info(f"Sending email to {recipient_email} via Resend HTTPS API (Port 443)...")
+                # Use verified Resend domain email if default SENDER_EMAIL is unverified on Resend
+                resend_from_email = os.getenv("RESEND_SENDER_EMAIL", "hello@manishverse.com" if "manishverse" in SENDER_EMAIL or "bloobeach" in SENDER_EMAIL else SENDER_EMAIL)
+                logger.info(f"Sending email to {recipient_email} via Resend HTTPS API (From: {resend_from_email})...")
                 res = requests.post(
                     "https://api.resend.com/emails",
                     headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
                     json={
-                        "from": f"{SENDER_NAME} <{SENDER_EMAIL}>",
+                        "from": f"{SENDER_NAME} <{resend_from_email}>",
                         "to": [recipient_email],
                         "subject": subject,
                         "text": full_body
