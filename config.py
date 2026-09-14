@@ -119,9 +119,13 @@ setup_logging()
 SERPAPI_KEY = os.getenv("SERPAPI_KEY", "")
 GOOGLE_PLACES_API_KEY = os.getenv("GOOGLE_PLACES_API_KEY", "")
 
+# HTTP Email API Relays (Bypasses Cloud Platform SMTP Port 25/465/587 blocks)
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+BREVO_API_KEY = os.getenv("BREVO_API_KEY", "")
+
 # SMTP Email Credentials
 SMTP_HOST = os.getenv("SMTP_HOST", "smtp.hostinger.com")
-SMTP_PORT = int(os.getenv("SMTP_PORT", 465))
+SMTP_PORT = int(os.getenv("SMTP_PORT", 587))
 SMTP_USER = os.getenv("SMTP_USER", "hello@outreach.bloobeach.com")
 SMTP_PASS = os.getenv("SMTP_PASS", "")
 

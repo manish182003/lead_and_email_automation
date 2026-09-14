@@ -20,12 +20,14 @@ def _getaddrinfo_ipv4_only(host, port, family=0, type=0, proto=0, flags=0):
 
 socket.getaddrinfo = _getaddrinfo_ipv4_only
 
+import requests
 from config import (
     SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS,
     SENDER_NAME, SENDER_EMAIL, DAILY_SEND_CAP,
     MIN_SEND_DELAY_SEC, MAX_SEND_DELAY_SEC,
     BUSINESS_HOURS_START, BUSINESS_HOURS_END,
-    BUSINESS_TIMEZONE, FOOTER_UNSUBSCRIBE
+    BUSINESS_TIMEZONE, FOOTER_UNSUBSCRIBE,
+    RESEND_API_KEY, BREVO_API_KEY
 )
 from database import Database
 
@@ -89,18 +91,64 @@ class SenderAgent:
             return False
 
     def send_email_smtp(self, recipient_email: str, subject: str, body_text: str) -> bool:
-        """Sends email via SSL / STARTTLS SMTP."""
+        """Sends email via Resend/Brevo HTTPS API (Port 443) or Hostinger SMTP (Ports 587/465)."""
+        full_body = f"{body_text.strip()}\n\n---\n{FOOTER_UNSUBSCRIBE}"
+
+        # Option 1: Send via Resend HTTPS API (Port 443 - immune to cloud platform SMTP port blocks)
+        if RESEND_API_KEY:
+            try:
+                logger.info(f"Sending email to {recipient_email} via Resend HTTPS API (Port 443)...")
+                res = requests.post(
+                    "https://api.resend.com/emails",
+                    headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+                    json={
+                        "from": f"{SENDER_NAME} <{SENDER_EMAIL}>",
+                        "to": [recipient_email],
+                        "subject": subject,
+                        "text": full_body
+                    },
+                    timeout=10
+                )
+                if res.status_code in (200, 201):
+                    logger.info(f"Resend HTTPS API successfully delivered email to {recipient_email}!")
+                    return True
+                else:
+                    logger.warning(f"Resend HTTPS API response error ({res.status_code}): {res.text}. Trying fallbacks...")
+            except Exception as resend_err:
+                logger.warning(f"Resend HTTPS API exception: {resend_err}. Trying fallbacks...")
+
+        # Option 2: Send via Brevo HTTPS API (Port 443 - immune to cloud platform SMTP port blocks)
+        if BREVO_API_KEY:
+            try:
+                logger.info(f"Sending email to {recipient_email} via Brevo HTTPS API (Port 443)...")
+                res = requests.post(
+                    "https://api.brevo.com/v3/smtp/email",
+                    headers={"api-key": BREVO_API_KEY, "Content-Type": "application/json"},
+                    json={
+                        "sender": {"name": SENDER_NAME, "email": SENDER_EMAIL},
+                        "to": [{"email": recipient_email}],
+                        "subject": subject,
+                        "textContent": full_body
+                    },
+                    timeout=10
+                )
+                if res.status_code in (200, 201):
+                    logger.info(f"Brevo HTTPS API successfully delivered email to {recipient_email}!")
+                    return True
+                else:
+                    logger.warning(f"Brevo HTTPS API response error ({res.status_code}): {res.text}. Trying fallbacks...")
+            except Exception as brevo_err:
+                logger.warning(f"Brevo HTTPS API exception: {brevo_err}. Trying fallbacks...")
+
+        # Option 3: Send via Hostinger SMTP Sockets (Dual Port 587 STARTTLS -> Port 465 SSL)
         msg = MIMEMultipart("alternative")
         msg["From"] = f"{SENDER_NAME} <{SENDER_EMAIL}>"
         msg["To"] = recipient_email
         msg["Subject"] = subject
-
-        # Append compliance unsubscribe footer
-        full_body = f"{body_text.strip()}\n\n---\n{FOOTER_UNSUBSCRIBE}"
         msg.attach(MIMEText(full_body, "plain", "utf-8"))
 
         try:
-            # 1. Send via SMTP
+            # Send via SMTP socket
             server = self._get_smtp_connection(timeout=10)
             server.sendmail(SENDER_EMAIL, [recipient_email], msg.as_string())
             server.quit()
