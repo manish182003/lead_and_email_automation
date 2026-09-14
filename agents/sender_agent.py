@@ -48,12 +48,39 @@ class SenderAgent:
             logger.warning(f"Timezone check failed: {e}. Defaulting to allowing send.")
             return True
 
+    def _get_smtp_connection(self, timeout: int = 10):
+        """
+        Attempts SMTP connection with dual-port fallback (Port 587 STARTTLS first, then Port 465 SSL).
+        Port 587 STARTTLS is immune to cloud firewall port 465 timeouts on platforms like Render.
+        """
+        # Try Port 587 STARTTLS first
+        try:
+            logger.info(f"Connecting to Hostinger SMTP {SMTP_HOST}:587 (STARTTLS)...")
+            server = smtplib.SMTP(SMTP_HOST, 587, timeout=timeout)
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+            server.login(SMTP_USER, SMTP_PASS)
+            logger.info("Hostinger SMTP connected via Port 587 (STARTTLS)!")
+            return server
+        except Exception as err_587:
+            logger.warning(f"SMTP Port 587 STARTTLS notice ({err_587}). Trying Port 465 (SSL)...")
+
+        # Fallback to Port 465 SSL
+        try:
+            logger.info(f"Connecting to Hostinger SMTP {SMTP_HOST}:465 (SSL)...")
+            server = smtplib.SMTP_SSL(SMTP_HOST, 465, timeout=timeout)
+            server.login(SMTP_USER, SMTP_PASS)
+            logger.info("Hostinger SMTP connected via Port 465 (SSL)!")
+            return server
+        except Exception as err_465:
+            logger.error(f"SMTP connection failed on both Port 587 and Port 465: {err_465}")
+            raise err_465
+
     def test_smtp_connection(self) -> bool:
         """Verifies Hostinger SMTP authentication."""
         try:
-            logger.info(f"Connecting to Hostinger SMTP: {SMTP_HOST}:{SMTP_PORT} (SSL)...")
-            server = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=10)
-            server.login(SMTP_USER, SMTP_PASS)
+            server = self._get_smtp_connection(timeout=10)
             server.quit()
             logger.info("Hostinger SMTP authentication successful!")
             return True
@@ -62,7 +89,7 @@ class SenderAgent:
             return False
 
     def send_email_smtp(self, recipient_email: str, subject: str, body_text: str) -> bool:
-        """Sends email via SSL SMTP."""
+        """Sends email via SSL / STARTTLS SMTP."""
         msg = MIMEMultipart("alternative")
         msg["From"] = f"{SENDER_NAME} <{SENDER_EMAIL}>"
         msg["To"] = recipient_email
@@ -74,15 +101,14 @@ class SenderAgent:
 
         try:
             # 1. Send via SMTP
-            server = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=15)
-            server.login(SMTP_USER, SMTP_PASS)
+            server = self._get_smtp_connection(timeout=10)
             server.sendmail(SENDER_EMAIL, [recipient_email], msg.as_string())
             server.quit()
 
             # 2. Sync to Hostinger Webmail IMAP 'Sent' folder
             try:
                 imap_host = SMTP_HOST.replace("smtp.", "imap.")
-                mail = imaplib.IMAP4_SSL(imap_host, 993)
+                mail = imaplib.IMAP4_SSL(imap_host, 993, timeout=10)
                 mail.login(SMTP_USER, SMTP_PASS)
                 # Try standard Sent folder names
                 for folder in ["Sent", "INBOX.Sent"]:

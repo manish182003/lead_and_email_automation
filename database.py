@@ -85,10 +85,10 @@ class Database:
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_leads_sent_at ON leads(sent_at);")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_leads_contact_email ON leads(contact_email);")
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_leads_business_name ON leads(business_name);")
-            cursor.execute("CREATE INDEX IF NOT EXISTS idx_suppression_email ON suppression_list(email);")
-
             conn.commit()
-            logger.debug("Database schema initialized successfully.")
+        
+        self.seed_initial_test_leads()
+        logger.debug("Database schema initialized successfully.")
 
     @staticmethod
     def extract_domain(url_or_domain: str) -> str:
@@ -352,6 +352,65 @@ class Database:
             cursor.execute("SELECT COUNT(*) FROM leads")
             row = cursor.fetchone()
             return row[0] if row else 0
+
+    def seed_initial_test_leads(self):
+        """Seeds ready-to-send drafted leads into the database for immediate live verification on boot."""
+        test_leads = [
+            {
+                "business_name": "TNA Freight Services Inc",
+                "domain": "tnafsi.com",
+                "website": "https://tnafsi.com",
+                "contact_email": "info@tnafsi.com",
+                "email_subject": "quick question for TNA Freight Services Inc",
+                "email_body": "Hey there,\n\nQuick one: when a team member at TNA Freight Services Inc finishes a job, how does the paperwork get back to the office — still spreadsheets or paper?\n\nWe built workflow automation tools so teams can dispatch, log jobs, and get signed work orders out to clients in a few taps. Open to a quick 10-minute look?\n\nJefferson Geerman\nBloo Beach Softwares LLC | 1309 Coffeen Avenue STE 1200, Sheridan, WY 82801, USA\nWebsite: https://bloobeach.com | Portfolio: https://manishjoshi.online",
+                "status": "drafted"
+            },
+            {
+                "business_name": "KMP Corp",
+                "domain": "kmpcorp.com",
+                "website": "https://kmpcorp.com",
+                "contact_email": "info@kmpcorp.com",
+                "email_subject": "quick question for KMP Corp",
+                "email_body": "Hey there,\n\nQuick one: when a team member at KMP Corp finishes a job, how does the paperwork get back to the office — still spreadsheets or paper?\n\nWe built workflow automation tools so teams can dispatch, log jobs, and get signed work orders out to clients in a few taps. Open to a quick 10-minute look?\n\nJefferson Geerman\nBloo Beach Softwares LLC | 1309 Coffeen Avenue STE 1200, Sheridan, WY 82801, USA\nWebsite: https://bloobeach.com | Portfolio: https://manishjoshi.online",
+                "status": "drafted"
+            },
+            {
+                "business_name": "Rescue Air TX",
+                "domain": "rescueairtx.com",
+                "website": "https://rescueairtx.com",
+                "contact_email": "info@rescueairtx.com",
+                "email_subject": "quick question for Rescue Air TX",
+                "email_body": "Hey there,\n\nQuick one: when a team member at Rescue Air TX finishes a job, how does the paperwork get back to the office — still spreadsheets or paper?\n\nWe built workflow automation tools so teams can dispatch, log jobs, and get signed work orders out to clients in a few taps. Open to a quick 10-minute look?\n\nJefferson Geerman\nBloo Beach Softwares LLC | 1309 Coffeen Avenue STE 1200, Sheridan, WY 82801, USA\nWebsite: https://bloobeach.com | Portfolio: https://manishjoshi.online",
+                "status": "drafted"
+            },
+            {
+                "business_name": "Thrive Digital Consulting",
+                "domain": "thrivedigitalconsulting.com",
+                "website": "https://thrivedigitalconsulting.com",
+                "contact_email": "talha@thrivedigitalconsulting.com",
+                "email_subject": "quick question for Thrive Digital Consulting",
+                "email_body": "Hey there,\n\nQuick one: when a team member at Thrive Digital Consulting finishes a job, how does the paperwork get back to the office — still spreadsheets or paper?\n\nWe built workflow automation tools so teams can dispatch, log jobs, and get signed work orders out to clients in a few taps. Open to a quick 10-minute look?\n\nJefferson Geerman\nBloo Beach Softwares LLC | 1309 Coffeen Avenue STE 1200, Sheridan, WY 82801, USA\nWebsite: https://bloobeach.com | Portfolio: https://manishjoshi.online",
+                "status": "drafted"
+            }
+        ]
+
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            for lead in test_leads:
+                try:
+                    cursor.execute("""
+                        INSERT OR IGNORE INTO leads (
+                            business_name, domain, website, contact_email, email_verified,
+                            email_subject, email_body, status, source
+                        ) VALUES (?, ?, ?, ?, 1, ?, ?, ?, 'seed_initial')
+                    """, (
+                        lead["business_name"], lead["domain"], lead["website"],
+                        lead["contact_email"], lead["email_subject"], lead["email_body"],
+                        lead["status"]
+                    ))
+                except Exception as e:
+                    logger.debug(f"Could not seed test lead {lead['business_name']}: {e}")
+            conn.commit()
 
     def log_run(self, agent_name: str, processed: int, success: int, errors: int, details: str = ""):
         with self.get_connection() as conn:
