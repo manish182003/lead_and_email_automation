@@ -90,6 +90,32 @@ class SenderAgent:
             logger.error(f"Hostinger SMTP authentication failed: {e}")
             return False
 
+    def sync_to_hostinger_sent_folder(self, recipient_email: str, subject: str, body_text: str, from_email: str = SENDER_EMAIL):
+        """Syncs sent email directly into Hostinger Webmail IMAP 'Sent' folder so it appears in your Hostinger Sent tab."""
+        try:
+            msg = MIMEMultipart("alternative")
+            msg["From"] = f"{SENDER_NAME} <{from_email}>"
+            msg["To"] = recipient_email
+            msg["Subject"] = subject
+            full_body = f"{body_text.strip()}\n\n---\n{FOOTER_UNSUBSCRIBE}"
+            msg.attach(MIMEText(full_body, "plain", "utf-8"))
+
+            imap_host = SMTP_HOST.replace("smtp.", "imap.")
+            mail = imaplib.IMAP4_SSL(imap_host, 993, timeout=10)
+            mail.login(SMTP_USER, SMTP_PASS)
+            for folder in ["Sent", "INBOX.Sent"]:
+                try:
+                    res, _ = mail.select(folder)
+                    if res == "OK":
+                        mail.append(folder, "\\Seen", imaplib.Time2Internaldate(time.time()), msg.as_bytes())
+                        logger.info(f"Successfully synced sent email to Hostinger Webmail '{folder}' tab.")
+                        break
+                except Exception:
+                    continue
+            mail.logout()
+        except Exception as imap_err:
+            logger.debug(f"Hostinger IMAP Sent folder sync notice: {imap_err}")
+
     def send_email_smtp(self, recipient_email: str, subject: str, body_text: str) -> bool:
         """Sends email via Resend/Brevo HTTPS API (Port 443) or Hostinger SMTP (Ports 587/465)."""
         full_body = f"{body_text.strip()}\n\n---\n{FOOTER_UNSUBSCRIBE}"
@@ -97,7 +123,6 @@ class SenderAgent:
         # Option 1: Send via Resend HTTPS API (Port 443 - immune to cloud platform SMTP port blocks)
         if RESEND_API_KEY:
             try:
-                # Use verified Resend domain email if default SENDER_EMAIL is unverified on Resend
                 resend_from_email = os.getenv("RESEND_SENDER_EMAIL", "hello@manishverse.com" if "manishverse" in SENDER_EMAIL or "bloobeach" in SENDER_EMAIL else SENDER_EMAIL)
                 logger.info(f"Sending email to {recipient_email} via Resend HTTPS API (From: {resend_from_email})...")
                 res = requests.post(
@@ -113,6 +138,7 @@ class SenderAgent:
                 )
                 if res.status_code in (200, 201):
                     logger.info(f"Resend HTTPS API successfully delivered email to {recipient_email}!")
+                    self.sync_to_hostinger_sent_folder(recipient_email, subject, body_text, resend_from_email)
                     return True
                 else:
                     logger.warning(f"Resend HTTPS API response error ({res.status_code}): {res.text}. Trying fallbacks...")
@@ -136,6 +162,7 @@ class SenderAgent:
                 )
                 if res.status_code in (200, 201):
                     logger.info(f"Brevo HTTPS API successfully delivered email to {recipient_email}!")
+                    self.sync_to_hostinger_sent_folder(recipient_email, subject, body_text, SENDER_EMAIL)
                     return True
                 else:
                     logger.warning(f"Brevo HTTPS API response error ({res.status_code}): {res.text}. Trying fallbacks...")
@@ -155,24 +182,8 @@ class SenderAgent:
             server.sendmail(SENDER_EMAIL, [recipient_email], msg.as_string())
             server.quit()
 
-            # 2. Sync to Hostinger Webmail IMAP 'Sent' folder
-            try:
-                imap_host = SMTP_HOST.replace("smtp.", "imap.")
-                mail = imaplib.IMAP4_SSL(imap_host, 993, timeout=10)
-                mail.login(SMTP_USER, SMTP_PASS)
-                # Try standard Sent folder names
-                for folder in ["Sent", "INBOX.Sent"]:
-                    try:
-                        res, _ = mail.select(folder)
-                        if res == "OK":
-                            mail.append(folder, "\\Seen", imaplib.Time2Internaldate(time.time()), msg.as_bytes())
-                            break
-                    except Exception:
-                        continue
-                mail.logout()
-            except Exception as imap_err:
-                logger.debug(f"Could not copy to IMAP Sent folder: {imap_err}")
-
+            # Sync to Hostinger Webmail IMAP Sent folder
+            self.sync_to_hostinger_sent_folder(recipient_email, subject, body_text, SENDER_EMAIL)
             return True
         except Exception as e:
             logger.error(f"Failed to send email to {recipient_email}: {e}")
