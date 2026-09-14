@@ -129,24 +129,29 @@ def start_health_server():
         logger.warning(f"Could not start Health Check HTTP server on port {port}: {e}")
 
 def run_startup_bootstrap():
-    """Replenishes lead queue and triggers sender agent if drafted emails are ready on container boot/restart."""
+    """Triggers sender agent immediately if drafted emails exist, then replenishes queue if needed."""
     try:
         db = Database()
         drafts = db.get_leads_by_status("drafted", limit=100)
         logger.info(f"Container startup check: Currently {len(drafts)} ready drafted emails in queue.")
 
+        # 1. Send any ready drafted emails immediately on startup
+        if len(drafts) > 0 and db.get_sends_today_count() < 20:
+            logger.info(f"Drafted emails ready ({len(drafts)}). Triggering SenderAgent batch immediately...")
+            job_sender()
+            drafts = db.get_leads_by_status("drafted", limit=100)
+
+        # 2. Replenish queue if below 10 drafted leads
         if len(drafts) < 10:
             logger.info("Drafted queue below 10. Triggering automatic bootstrap pass (Scraper -> Enrichment -> Drafting)...")
             job_scraper()
             job_enrichment()
             job_drafting()
+            
             drafts = db.get_leads_by_status("drafted", limit=100)
-            logger.info(f"Startup bootstrap complete! Total ready drafted emails: {len(drafts)}")
-
-        # Trigger Sender Agent if drafted emails exist and daily cap not reached today
-        if len(drafts) > 0 and db.get_sends_today_count() < 20:
-            logger.info(f"Drafted emails ready ({len(drafts)}). Triggering SenderAgent batch...")
-            job_sender()
+            if len(drafts) > 0 and db.get_sends_today_count() < 20:
+                logger.info(f"Post-bootstrap drafted emails ready ({len(drafts)}). Triggering SenderAgent batch...")
+                job_sender()
     except Exception as e:
         logger.error(f"Startup bootstrap exception: {e}", exc_info=True)
 
