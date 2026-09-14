@@ -129,18 +129,24 @@ def start_health_server():
         logger.warning(f"Could not start Health Check HTTP server on port {port}: {e}")
 
 def run_startup_bootstrap():
-    """If DB has 0 leads on container boot/restart, automatically run Scraper -> Enrichment -> Drafting."""
+    """Replenishes lead queue and triggers sender agent if drafted emails are ready on container boot/restart."""
     try:
         db = Database()
-        total = db.get_total_leads_count()
-        if total == 0:
-            logger.info("Database is empty on container startup. Triggering automatic bootstrap pass (Scraper -> Enrichment -> Drafting)...")
+        drafts = db.get_leads_by_status("drafted", limit=100)
+        logger.info(f"Container startup check: Currently {len(drafts)} ready drafted emails in queue.")
+
+        if len(drafts) < 10:
+            logger.info("Drafted queue below 10. Triggering automatic bootstrap pass (Scraper -> Enrichment -> Drafting)...")
             job_scraper()
             job_enrichment()
             job_drafting()
-            logger.info("Startup bootstrap pass completed! Database populated with fresh drafted emails.")
-        else:
-            logger.info(f"Database already populated with {total} leads. Skipping startup bootstrap.")
+            drafts = db.get_leads_by_status("drafted", limit=100)
+            logger.info(f"Startup bootstrap complete! Total ready drafted emails: {len(drafts)}")
+
+        # Trigger Sender Agent if drafted emails exist and daily cap not reached today
+        if len(drafts) > 0 and db.get_sends_today_count() < 20:
+            logger.info(f"Drafted emails ready ({len(drafts)}). Triggering SenderAgent batch...")
+            job_sender()
     except Exception as e:
         logger.error(f"Startup bootstrap exception: {e}", exc_info=True)
 

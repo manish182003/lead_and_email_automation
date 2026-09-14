@@ -64,10 +64,10 @@ DAILY_SEND_CAP = 20
 MIN_SEND_DELAY_SEC = 60
 MAX_SEND_DELAY_SEC = 180
 
-# Business Sending Hours for US/UK/International Client Alignment (24-hour format IST)
-# 18:00 IST to 23:30 IST aligns with 8:30 AM EST to 2:00 PM EST (Peak US Business Hours)
-BUSINESS_HOURS_START = 18  # 6:00 PM IST (8:30 AM US Eastern Time)
-BUSINESS_HOURS_END = 24    # 12:00 AM IST (2:30 PM US Eastern Time)
+# Business Sending Hours (24-hour format IST)
+# 8:00 AM IST to 11:59 PM IST covers UK, European, and US Business Hours (8:30 AM EST to 2:30 PM EST)
+BUSINESS_HOURS_START = 8   # 8:00 AM IST
+BUSINESS_HOURS_END = 24    # 12:00 AM IST (23:59:59 IST)
 BUSINESS_TIMEZONE = "Asia/Kolkata"
 
 # Follow-Up Intervals (Days)
