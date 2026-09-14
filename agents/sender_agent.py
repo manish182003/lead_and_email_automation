@@ -122,28 +122,34 @@ class SenderAgent:
 
         # Option 1: Send via Resend HTTPS API (Port 443 - immune to cloud platform SMTP port blocks)
         if RESEND_API_KEY:
-            try:
-                resend_from_email = os.getenv("RESEND_SENDER_EMAIL", "hello@manishverse.com" if "manishverse" in SENDER_EMAIL or "bloobeach" in SENDER_EMAIL else SENDER_EMAIL)
-                logger.info(f"Sending email to {recipient_email} via Resend HTTPS API (From: {resend_from_email})...")
-                res = requests.post(
-                    "https://api.resend.com/emails",
-                    headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
-                    json={
-                        "from": f"{SENDER_NAME} <{resend_from_email}>",
-                        "to": [recipient_email],
-                        "subject": subject,
-                        "text": full_body
-                    },
-                    timeout=10
-                )
-                if res.status_code in (200, 201):
-                    logger.info(f"Resend HTTPS API successfully delivered email to {recipient_email}!")
-                    self.sync_to_hostinger_sent_folder(recipient_email, subject, body_text, resend_from_email)
-                    return True
-                else:
-                    logger.warning(f"Resend HTTPS API response error ({res.status_code}): {res.text}. Trying fallbacks...")
-            except Exception as resend_err:
-                logger.warning(f"Resend HTTPS API exception: {resend_err}. Trying fallbacks...")
+            # Try SENDER_EMAIL (e.g. hello@outreach.bloobeach.com) first, then fallback to verified hello@manishverse.com
+            candidate_froms = [SENDER_EMAIL, os.getenv("RESEND_SENDER_EMAIL", "hello@manishverse.com")]
+            # Remove duplicates preserving order
+            seen = set()
+            candidate_froms = [f for f in candidate_froms if not (f in seen or seen.add(f))]
+
+            for resend_from in candidate_froms:
+                try:
+                    logger.info(f"Sending email to {recipient_email} via Resend HTTPS API (From: {resend_from})...")
+                    res = requests.post(
+                        "https://api.resend.com/emails",
+                        headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+                        json={
+                            "from": f"{SENDER_NAME} <{resend_from}>",
+                            "to": [recipient_email],
+                            "subject": subject,
+                            "text": full_body
+                        },
+                        timeout=10
+                    )
+                    if res.status_code in (200, 201):
+                        logger.info(f"Resend HTTPS API successfully delivered email to {recipient_email} from {resend_from}!")
+                        self.sync_to_hostinger_sent_folder(recipient_email, subject, body_text, resend_from)
+                        return True
+                    else:
+                        logger.warning(f"Resend HTTPS API response notice for {resend_from} ({res.status_code}): {res.text}")
+                except Exception as resend_err:
+                    logger.warning(f"Resend HTTPS API exception for {resend_from}: {resend_err}")
 
         # Option 2: Send via Brevo HTTPS API (Port 443 - immune to cloud platform SMTP port blocks)
         if BREVO_API_KEY:
