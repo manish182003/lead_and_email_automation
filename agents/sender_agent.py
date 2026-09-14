@@ -7,10 +7,18 @@ import email
 import random
 import logging
 import smtplib
+import socket
 from datetime import datetime
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import pytz
+
+# Force IPv4 socket resolution to prevent IPv6 [Errno 101] Network is unreachable on Cloud platforms (Render/Docker)
+_orig_getaddrinfo = socket.getaddrinfo
+def _getaddrinfo_ipv4_only(host, port, family=0, type=0, proto=0, flags=0):
+    return _orig_getaddrinfo(host, port, socket.AF_INET, type, proto, flags)
+
+socket.getaddrinfo = _getaddrinfo_ipv4_only
 
 from config import (
     SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS,
@@ -164,7 +172,7 @@ class SenderAgent:
 
         for lead in drafted_leads:
             lead_id = lead["id"]
-            recipient = lead.get("contact_email", "").strip()
+            recipient = lead.get("contact_email", "").strip().rstrip('.')
             subject = lead.get("email_subject", "")
             body = lead.get("email_body", "")
 

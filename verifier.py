@@ -110,7 +110,7 @@ class EmailVerifier:
         if not email:
             return False, "Email is empty"
 
-        clean_email = email.strip().lower()
+        clean_email = email.strip().lower().rstrip('.')
 
         # Step 1: Syntax check
         if not cls.is_valid_syntax(clean_email):

@@ -208,19 +208,20 @@ class EnrichmentAgent:
         is_duplicate = False
 
         for candidate in set(found_emails):
-            if self.db.is_email_used(candidate, exclude_lead_id=lead_id):
-                logger.info(f"Email '{candidate}' is already used by another lead or suppressed. Skipping duplicate email.")
+            cand = candidate.strip().rstrip('.')
+            if self.db.is_email_used(cand, exclude_lead_id=lead_id):
+                logger.info(f"Email '{cand}' is already used by another lead or suppressed. Skipping duplicate email.")
                 is_duplicate = True
                 continue
 
-            is_valid, reason = EmailVerifier.verify_email(candidate)
-            logger.info(f"Testing email '{candidate}': Valid={is_valid} ({reason})")
+            is_valid, reason = EmailVerifier.verify_email(cand)
+            logger.info(f"Testing email '{cand}': Valid={is_valid} ({reason})")
             if is_valid:
-                target_email = candidate
+                target_email = cand
                 email_verified = True
                 break
             elif not target_email:
-                target_email = candidate  # Store unverified for fallback tracking
+                target_email = cand  # Store unverified for fallback tracking
 
         if email_verified and target_email:
             return "enriched", target_email, True, summary, pain_point, None
