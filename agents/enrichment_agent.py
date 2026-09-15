@@ -236,8 +236,17 @@ class EnrichmentAgent:
         logger.info("=== Running Enrichment Agent ===")
         new_leads = self.db.get_leads_by_status("new", limit=limit)
         if not new_leads:
-            logger.info("No 'new' leads found to enrich.")
-            return {"processed": 0, "enriched": 0, "no_email": 0, "failed": 0}
+            logger.info("No 'new' leads found to enrich. Triggering ScraperAgent to fetch fresh leads...")
+            try:
+                from agents.scraper_agent import ScraperAgent
+                ScraperAgent(db=self.db).run()
+                new_leads = self.db.get_leads_by_status("new", limit=limit)
+            except Exception as scrape_err:
+                logger.warning(f"Auto-scraper trigger notice: {scrape_err}")
+
+            if not new_leads:
+                logger.info("No new leads available to enrich.")
+                return {"processed": 0, "enriched": 0, "no_email": 0, "failed": 0}
 
         enriched_count = 0
         no_email_count = 0

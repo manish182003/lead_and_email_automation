@@ -163,7 +163,7 @@ Return ONLY a valid JSON object with keys "subject" and "body".
         summary = lead.get("summary", "") or f"{business_name} offers professional services."
         pain_point = lead.get("pain_point", "") or "Opportunity to streamline workorders and dispatch workflows."
 
-        models_to_try = [GROQ_MODEL, GROQ_FALLBACK_MODEL, "mixtral-8x7b-32768", "gemma2-9b-it"]
+        models_to_try = ["groq/compound-mini", "groq/compound", "openai/gpt-oss-120b", "qwen/qwen3.8-27b"]
 
         for attempt, model_to_use in enumerate(models_to_try, start=1):
             try:

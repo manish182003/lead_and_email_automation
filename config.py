@@ -80,8 +80,8 @@ FOOTER_UNSUBSCRIBE = "Reply STOP if you'd rather not hear from me again."
 
 # LLM Configuration (Groq)
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-GROQ_MODEL = "llama-3.3-70b-versatile"
-GROQ_FALLBACK_MODEL = "llama3-8b-8192"
+GROQ_MODEL = "groq/compound-mini"
+GROQ_FALLBACK_MODEL = "openai/gpt-oss-120b"
 
 def setup_logging(name: str = None):
     """Sets up unified logging to both logs/pipeline.log file and stdout console."""
