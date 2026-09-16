@@ -43,6 +43,9 @@ def job_enrichment():
         agent = EnrichmentAgent()
         stats = agent.run()
         logger.info(f"Enrichment Job Complete: {stats}")
+        if stats and stats.get("enriched", 0) > 0:
+            logger.info(f"Enriched {stats.get('enriched')} leads! Auto-triggering DraftingAgent...")
+            job_drafting()
     except Exception as e:
         logger.error(f"Enrichment Job Exception: {e}", exc_info=True)
 
@@ -52,6 +55,9 @@ def job_drafting():
         agent = DraftingAgent()
         stats = agent.run()
         logger.info(f"Drafting Job Complete: {stats}")
+        if stats and stats.get("drafted", 0) > 0:
+            logger.info(f"Drafted {stats.get('drafted')} custom emails! Auto-triggering SenderAgent...")
+            job_sender()
     except Exception as e:
         logger.error(f"Drafting Job Exception: {e}", exc_info=True)
 
