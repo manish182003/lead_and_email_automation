@@ -17,8 +17,9 @@ logger = logging.getLogger(__name__)
 
 OFFICIAL_SIGNATURE_TEXT = (
     "Jefferson Geerman\n"
-    "Bloo Beach Softwares LLC | 1309 Coffeen Avenue STE 1200, Sheridan, WY 82801, USA\n"
-    "Website: https://bloobeach.com | Portfolio: https://manishjoshi.online"
+    "Founder, Bloo Beach Softwares LLC\n"
+    "hello@outreach.bloobeach.com | bloobeach.com\n"
+    "Bloo Beach Softwares LLC, 1309 Coffeen Avenue STE 1200, Sheridan, WY 82801, USA"
 )
 
 class DraftingAgent:
@@ -37,30 +38,40 @@ class DraftingAgent:
             raise ValueError("Groq API Key missing or client uninitialized.")
 
         prompt = f"""
-You are Jefferson Geerman from Bloo Beach Softwares LLC (bloobeach.com & manishjoshi.online).
-Write a short, custom, curiosity-driven cold email to a small/medium business owner.
+You are Jefferson Geerman, Founder at Bloo Beach Softwares LLC.
+Write a warm, human, highly personalized cold email to a business decision-maker.
 
-GOAL: Ask a quick question about their workflow (workorders, paper/excel vs software, dispatch, client intake) to start a 10-minute discovery chat. DO NOT try to sell services or pitch products in this first email!
-
-TARGET BUSINESS DETAILS:
+TARGET BUSINESS:
 - Company Name: {business_name}
-- What They Do (Summary): {summary}
-- Context / Service Type: {pain_point}
+- Business Summary: {summary}
+- Specific Context / Pain Point: {pain_point}
 
-EMAIL STRUCTURE INSTRUCTIONS:
-1. GREETING: "Hey there," or "Hi {business_name} team," or "Hi [Name] — quick one:"
-2. FIRST SENTENCE: Ask a casual, curious question about how a company like theirs handles their paperwork, dispatch, or client intake workflows.
-   Example style: "When a team member at {business_name} finishes a job, how does the paperwork get back to the office? Still spreadsheets or paper?"
-3. CALL TO ACTION: A soft, low-pressure request:
-   "We built workflow automation tools so teams can dispatch, log jobs, and get signed work orders out to clients in a few taps. Open to a quick 10-minute look?"
-4. SIGNATURE:
+HUMAN EMAIL FORMAT & STRUCTURE:
+Subject Line: Short (3-5 words), lowercase, curiosity-driven (e.g., "quick question for {business_name}" or "quick workflow question")
+
+Email Body Structure:
+Paragraph 1:
+Hi there,
+
+Quick one: when a team member at {business_name} finishes a job or client intake, how does the paperwork get back to the office? Still spreadsheets, paper, or something else?
+
+Paragraph 2:
+I'm working on custom mobile app & AI workflow platforms at Bloo Beach Softwares LLC, and I'm reaching out to businesses like yours to learn how they handle dispatching, client intake, and job tracking. We're trying to understand what works, what doesn't, and what we could do better.
+
+Paragraph 3:
+Would you be open to a quick chat this week? I'd love to hear how you handle things on your end.
+
+Opt-out Line:
+I hope to hear from you soon. If these emails are out of line, let me know by replying "stop".
+
+Signature:
 {OFFICIAL_SIGNATURE_TEXT}
 
 RULES:
-- NO HARD SALES PITCH! NO "I am an AI engineer"! NO "buy our software"!
-- Keep total email body under 75 words.
-- Natural, casual, direct human tone.
-- Subject Line: Short (3-5 words), lowercase, curiosity-driven.
+- Make it sound 100% written by a real human founder. Avoid generic AI jargon like "hope this finds you well", "game-changer", "transform", "cutting-edge".
+- Keep total body length around 80-130 words.
+- Adapt Paragraph 1 naturally to fit {business_name}'s specific industry (HVAC, plumbing, logistics, e-commerce, software, healthcare, etc.).
+- ALWAYS include the opt-out line: 'I hope to hear from you soon. If these emails are out of line, let me know by replying "stop".' right before the signature.
 
 OUTPUT FORMAT:
 Return ONLY a valid JSON object with keys "subject" and "body".
@@ -76,7 +87,7 @@ Return ONLY a valid JSON object with keys "subject" and "body".
                 ],
                 model=model,
                 temperature=0.7,
-                max_tokens=280,
+                max_tokens=320,
                 response_format={"type": "json_object"}
             )
             content = response.choices[0].message.content.strip()
@@ -91,7 +102,7 @@ Return ONLY a valid JSON object with keys "subject" and "body".
                     ],
                     model=model,
                     temperature=0.7,
-                    max_tokens=280
+                    max_tokens=320
                 )
                 content = response.choices[0].message.content.strip()
             else:
@@ -134,8 +145,8 @@ Return ONLY a valid JSON object with keys "subject" and "body".
             return False, "Empty subject or body"
 
         words = body.split()
-        if len(words) > 120:
-            return False, f"Body too long ({len(words)} words > 120)"
+        if len(words) > 150:
+            return False, f"Body too long ({len(words)} words > 150)"
 
         if len(words) < 15:
             return False, f"Body too short ({len(words)} words < 15)"
@@ -193,9 +204,11 @@ Return ONLY a valid JSON object with keys "subject" and "body".
         # Fallback template matching exact company signature and structure
         fallback_subject = f"quick question for {business_name}"
         fallback_body = (
-            f"Hey there,\n\n"
-            f"Quick one: when a team member at {business_name} finishes a job, how does the paperwork get back to the office — still spreadsheets or paper?\n\n"
-            f"We built workflow automation tools so teams can dispatch, log jobs, and get signed work orders out to clients in a few taps. Open to a quick 10-minute look?\n\n"
+            f"Hi there,\n\n"
+            f"Quick one: when a team member at {business_name} finishes a job, how does the paperwork get back to the office? Still spreadsheets, paper, or something else?\n\n"
+            f"I'm working on custom mobile app & AI workflow platforms at Bloo Beach Softwares LLC, and I'm reaching out to businesses like yours to learn how they handle dispatching, client intake, and job tracking. We're trying to understand what works, what doesn't, and what we could do better.\n\n"
+            f"Would you be open to a quick chat this week? I'd love to hear how you handle things on your end.\n\n"
+            f"I hope to hear from you soon. If these emails are out of line, let me know by replying \"stop\".\n\n"
             f"{OFFICIAL_SIGNATURE_TEXT}"
         )
         return True, fallback_subject, fallback_body, "Fallback template used"
