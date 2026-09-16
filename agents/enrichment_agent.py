@@ -149,6 +149,39 @@ class EnrichmentAgent:
         pain_signal = " ".join(pain_points) if pain_points else "Opportunity to optimize operational workflows with custom AI and mobile solutions."
         return summary, pain_signal
 
+    @staticmethod
+    def score_email_priority(email: str) -> int:
+        """
+        Ranks candidate emails by business value and decision-maker likelihood.
+        Higher score = Higher priority.
+        """
+        if not email or "@" not in email:
+            return 0
+        email_clean = email.lower().strip()
+        prefix = email_clean.split("@")[0]
+
+        # Tier 1: Direct Executive / Owner / Founder (Score 100)
+        if any(kw in prefix for kw in ["ceo", "founder", "owner", "president", "director", "manager", "head", "vp", "exec"]):
+            return 100
+
+        # Tier 2: Direct Named Individual Emails (e.g. john@, sarah@, alex@) (Score 80)
+        if not any(kw in prefix for kw in ["info", "contact", "hello", "sales", "support", "help", "admin", "office", "service", "billing", "careers", "jobs", "receiving", "ticket"]):
+            return 80
+
+        # Tier 3: High-Value General Business Inboxes (Score 60)
+        if any(kw in prefix for kw in ["hello", "contact", "info", "sales", "office", "inquiries", "inquiry", "biz"]):
+            return 60
+
+        # Tier 4: General Admin (Score 40)
+        if any(kw in prefix for kw in ["admin", "general"]):
+            return 40
+
+        # Tier 5: Low-Priority / Auto-Responder Ticketing / Support (Score 10 - Deprioritized)
+        if any(kw in prefix for kw in ["support", "help", "service", "ticket", "tickets", "receiving", "billing", "careers", "jobs", "privacy", "feedback", "noreply", "no-reply"]):
+            return 10
+
+        return 50
+
     def enrich_lead(self, lead: Dict[str, Any]) -> Tuple[str, Optional[str], bool, str, str, Optional[str]]:
         """
         Enriches a single lead dictionary.
@@ -207,7 +240,10 @@ class EnrichmentAgent:
         email_verified = False
         is_duplicate = False
 
-        for candidate in set(found_emails):
+        # Sort candidate emails by decision-maker score (highest priority first)
+        sorted_candidates = sorted(list(set(found_emails)), key=lambda e: self.score_email_priority(e), reverse=True)
+
+        for candidate in sorted_candidates:
             cand = candidate.strip().rstrip('.')
             if self.db.is_email_used(cand, exclude_lead_id=lead_id):
                 logger.info(f"Email '{cand}' is already used by another lead or suppressed. Skipping duplicate email.")
@@ -215,7 +251,7 @@ class EnrichmentAgent:
                 continue
 
             is_valid, reason = EmailVerifier.verify_email(cand)
-            logger.info(f"Testing email '{cand}': Valid={is_valid} ({reason})")
+            logger.info(f"Testing email '{cand}' (Priority Score={self.score_email_priority(cand)}): Valid={is_valid} ({reason})")
             if is_valid:
                 target_email = cand
                 email_verified = True
